@@ -1,11 +1,12 @@
 import User from "../models/user.model.js"
 import Message from "../models/message.model.js";
 import cloudinary from "../lib/cloudinary.js";
+import { getRecieverSocketId , io} from "../lib/socket.js";
 
 export const getUsersForSidebar = async(req, res) => {
     try {
         const loggedInUserId = req.user._id;
-        const filteredUsers = await User.find({ id: { $ne: loggedInUserId } }).select("-password"); // ne--> not equal
+        const filteredUsers = await User.find({ _id: { $ne: loggedInUserId } }).select("-password"); // ne--> not equal
 
         res.status(200).json(filteredUsers);
     }
@@ -58,7 +59,11 @@ export const sendMessage= async(req,res)=>{
         })
         await newMessage.save();
 
-        // todo:real time functionality => socket.io
+        // real time functionality => socket.io
+        const receiverSocketId = getRecieverSocketId(receiverId);
+        if(receiverSocketId) {
+            io.to(receiverSocketId).emit("getMessage", newMessage);
+        }
 
         res.status(201).json(newMessage);
 
