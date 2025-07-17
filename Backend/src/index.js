@@ -14,6 +14,7 @@ import { app , server } from "./lib/socket.js";
 dotenv.config();
 
 const PORT=process.env.PORT;
+const __dirname = path.resolve();
 
 // Increase the payload size limits for handling image uploads
 app.use(express.json({ limit: '50mb' })); // Increased from default ~100kb to 50mb
