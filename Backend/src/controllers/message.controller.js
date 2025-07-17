@@ -1,9 +1,9 @@
 import User from "../models/user.model.js"
 import Message from "../models/message.model.js";
 import cloudinary from "../lib/cloudinary.js";
-import { getRecieverSocketId , io} from "../lib/socket.js";
+import { getRecieverSocketId, io } from "../lib/socket.js";
 
-export const getUsersForSidebar = async(req, res) => {
+export const getUsersForSidebar = async (req, res) => {
     try {
         const loggedInUserId = req.user._id;
         const filteredUsers = await User.find({ _id: { $ne: loggedInUserId } }).select("-password"); // ne--> not equal
@@ -37,33 +37,33 @@ export const getMessages = async (req, res) => {
     }
 }
 
-export const sendMessage= async(req,res)=>{
+export const sendMessage = async (req, res) => {
     try {
-        const {text,image} = req.body;
-        const receiverId=req.params.id;
-        const senderId= req.user._id;
+        const { text, image } = req.body;
+        const receiverId = req.params.id;
+        const senderId = req.user._id;
 
         let imageUrl;
-        if(image)
-        {
+        if (image) {
             // upload base64 img to cloudinary
-            const uploadResponse= await cloudinary.uploader.upload(image);
-            imageUrl=uploadResponse.secure_url;
+            const uploadResponse = await cloudinary.uploader.upload(image);
+            imageUrl = uploadResponse.secure_url;
         }
 
         const newMessage = new Message({
             senderId,
             receiverId,
             text,
-            image:imageUrl,
-        })
+            image: imageUrl,
+        });
         await newMessage.save();
 
         // real time functionality => socket.io
         const receiverSocketId = getRecieverSocketId(receiverId);
-        if(receiverSocketId) {
-            io.to(receiverSocketId).emit("getMessage", newMessage);
+        if (receiverSocketId) {
+            io.to(receiverSocketId).emit("newMessage", newMessage);
         }
+
 
         res.status(201).json(newMessage);
 
