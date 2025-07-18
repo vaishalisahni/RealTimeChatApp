@@ -24,12 +24,12 @@ app.use(express.urlencoded({ limit: '50mb', extended: true })); // Also handle U
 
 app.use(cookieParser());
 
-if (process.env.NODE_ENV !== "production") {
-  app.use(cors({
-    origin: ["http://localhost:5173","https://real-time-chat-app-nine-xi.vercel.app"],
-    credentials: true,
-  }));
-}
+
+app.use(cors({
+  origin: ["http://localhost:5173", "https://real-time-chat-app-nine-xi.vercel.app"],
+  credentials: true,
+}));
+
 
 app.use("/api/auth", authRoutes);
 app.use("/api/messages", messageRoutes);
