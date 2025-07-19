@@ -6,7 +6,6 @@ import MessageInput from "./MessageInput";
 import MessageSkeleton from "./skeletons/MessageSkeleton";
 import { useAuthStore } from "../store/useAuthStore";
 import { formatMessageTime } from "../lib/utils";
-import { Check, CheckCheck } from "lucide-react";
 
 const ChatContainer = () => {
   const {
@@ -15,14 +14,14 @@ const ChatContainer = () => {
     isMessagesLoading,
     selectedUser,
     subscribeToMessages,
-    unsubscribeFromMessages,
-    markMessagesAsRead
+    unsubscribeFromMessages
   } = useChatStore();
   const { authUser } = useAuthStore();
   const messageEndRef = useRef(null);
 
   useEffect(() => {
     getMessages(selectedUser._id);
+
     subscribeToMessages();
 
     return () => unsubscribeFromMessages();
@@ -33,19 +32,6 @@ const ChatContainer = () => {
       messageEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages]);
-
-  // Mark messages as read when component mounts or messages change
-  useEffect(() => {
-    if (selectedUser && messages.length > 0) {
-      const unreadMessages = messages.filter(msg => 
-        msg.senderId === selectedUser._id && !msg.seen
-      );
-      
-      if (unreadMessages.length > 0) {
-        markMessagesAsRead(selectedUser._id);
-      }
-    }
-  }, [selectedUser, messages, markMessagesAsRead]);
 
   if (isMessagesLoading) {
     return (
@@ -66,8 +52,9 @@ const ChatContainer = () => {
           <div
             key={message._id}
             className={`chat ${message.senderId === authUser._id ? "chat-end" : "chat-start"}`}
+            ref={messageEndRef}
           >
-            <div className="chat-image avatar">
+            <div className=" chat-image avatar">
               <div className="size-10 rounded-full border">
                 <img
                   src={
@@ -93,26 +80,13 @@ const ChatContainer = () => {
                 />
               )}
               {message.text && <p>{message.text}</p>}
-              
-              {/* Seen indicator for sent messages */}
-              {message.senderId === authUser._id && (
-                <div className="flex items-center justify-end mt-1">
-                  {message.seen ? (
-                    <CheckCheck className="w-4 h-4 text-blue-500" title="Seen" />
-                  ) : (
-                    <Check className="w-4 h-4 text-gray-400" title="Delivered" />
-                  )}
-                </div>
-              )}
             </div>
           </div>
         ))}
-        <div ref={messageEndRef} />
       </div>
 
       <MessageInput />
     </div>
   );
 };
-
 export default ChatContainer;

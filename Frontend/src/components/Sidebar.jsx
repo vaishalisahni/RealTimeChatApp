@@ -2,87 +2,32 @@ import { useEffect, useState } from "react";
 import { useChatStore } from "../store/useChatStore";
 import { useAuthStore } from "../store/useAuthStore";
 import SidebarSkeleton from "./skeletons/SidebarSkeleton";
-import { Users, Bell, BellOff } from "lucide-react";
+import { Users } from "lucide-react";
 
 const Sidebar = () => {
-  const { 
-    getUsers, 
-    users, 
-    selectedUser, 
-    setSelectedUser, 
-    isUsersLoading,
-    unreadMessages,
-    getTotalUnreadCount,
-    requestNotificationPermission
-  } = useChatStore();
+  const { getUsers, users, selectedUser, setSelectedUser, isUsersLoading } = useChatStore();
 
   const { onlineUsers } = useAuthStore();
   const [showOnlineOnly, setShowOnlineOnly] = useState(false);
-  const [notificationsEnabled, setNotificationsEnabled] = useState(
-    "Notification" in window && Notification.permission === "granted"
-  );
 
   useEffect(() => {
     getUsers();
   }, [getUsers]);
 
-  useEffect(() => {
-    // Check notification permission status
-    if ("Notification" in window) {
-      setNotificationsEnabled(Notification.permission === "granted");
-    }
-  }, []);
-
-  const handleNotificationToggle = () => {
-    if (notificationsEnabled) {
-      // Can't really disable notifications once granted, just update state
-      setNotificationsEnabled(false);
-    } else {
-      requestNotificationPermission();
-      // Update state after a short delay to check if permission was granted
-      setTimeout(() => {
-        setNotificationsEnabled(Notification.permission === "granted");
-      }, 100);
-    }
-  };
-
   const filteredUsers = showOnlineOnly
     ? users.filter((user) => onlineUsers.includes(user._id))
     : users;
-
-  const totalUnreadCount = getTotalUnreadCount();
 
   if (isUsersLoading) return <SidebarSkeleton />;
 
   return (
     <aside className="h-full w-20 lg:w-72 border-r border-base-300 flex flex-col transition-all duration-200">
       <div className="border-b border-base-300 w-full p-5">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Users className="size-6" />
-            <span className="font-medium hidden lg:block">Contacts</span>
-            {totalUnreadCount > 0 && (
-              <div className="bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                {totalUnreadCount > 99 ? '99+' : totalUnreadCount}
-              </div>
-            )}
-          </div>
-          
-          {/* Notification toggle */}
-          <button
-            onClick={handleNotificationToggle}
-            className="p-1 hover:bg-base-200 rounded-full transition-colors hidden lg:block"
-            title={notificationsEnabled ? "Disable notifications" : "Enable notifications"}
-          >
-            {notificationsEnabled ? (
-              <Bell className="size-4 text-green-500" />
-            ) : (
-              <BellOff className="size-4 text-gray-400" />
-            )}
-          </button>
+        <div className="flex items-center gap-2">
+          <Users className="size-6" />
+          <span className="font-medium hidden lg:block">Contacts</span>
         </div>
-        
-        {/* Online filter toggle */}
+        {/* TODO: Online filter toggle */}
         <div className="mt-3 hidden lg:flex items-center gap-2">
           <label className="cursor-pointer flex items-center gap-2">
             <input
@@ -98,56 +43,39 @@ const Sidebar = () => {
       </div>
 
       <div className="overflow-y-auto w-full py-3">
-        {filteredUsers.map((user) => {
-          const unreadCount = unreadMessages[user._id] || 0;
-          
-          return (
-            <button
-              key={user._id}
-              onClick={() => setSelectedUser(user)}
-              className={`
-                w-full p-3 flex items-center gap-3 relative
-                hover:bg-base-300 transition-colors
-                ${selectedUser?._id === user._id ? "bg-base-300 ring-1 ring-base-300" : ""}
-              `}
-            >
-              <div className="relative mx-auto lg:mx-0">
-                <img
-                  src={user.profilePic || "/avatar.svg"}
-                  alt={user.name}
-                  className="size-12 object-cover rounded-full"
+        {filteredUsers.map((user) => (
+          <button
+            key={user._id}
+            onClick={() => setSelectedUser(user)}
+            className={`
+              w-full p-3 flex items-center gap-3
+              hover:bg-base-300 transition-colors
+              ${selectedUser?._id === user._id ? "bg-base-300 ring-1 ring-base-300" : ""}
+            `}
+          >
+            <div className="relative mx-auto lg:mx-0">
+              <img
+                src={user.profilePic || "/avatar.svg"}
+                alt={user.name}
+                className="size-12 object-cover rounded-full"
+              />
+              {onlineUsers.includes(user._id) && (
+                <span
+                  className="absolute bottom-0 right-0 size-3 bg-green-500 
+                  rounded-full ring-2 ring-zinc-900"
                 />
-                {onlineUsers.includes(user._id) && (
-                  <span
-                    className="absolute bottom-0 right-0 size-3 bg-green-500 
-                    rounded-full ring-2 ring-zinc-900"
-                  />
-                )}
-                {/* Unread message badge */}
-                {unreadCount > 0 && (
-                  <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                    {unreadCount > 9 ? '9+' : unreadCount}
-                  </div>
-                )}
-              </div>
+              )}
+            </div>
 
-              {/* User info - only visible on larger screens */}
-              <div className="hidden lg:block text-left min-w-0 flex-1">
-                <div className="flex items-center justify-between">
-                  <div className="font-medium truncate">{user.fullName}</div>
-                  {unreadCount > 0 && (
-                    <div className="bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center ml-2">
-                      {unreadCount > 9 ? '9+' : unreadCount}
-                    </div>
-                  )}
-                </div>
-                <div className="text-sm text-zinc-400">
-                  {onlineUsers.includes(user._id) ? "Online" : "Offline"}
-                </div>
+            {/* User info - only visible on larger screens */}
+            <div className="hidden lg:block text-left min-w-0">
+              <div className="font-medium truncate">{user.fullName}</div>
+              <div className="text-sm text-zinc-400">
+                {onlineUsers.includes(user._id) ? "Online" : "Offline"}
               </div>
-            </button>
-          );
-        })}
+            </div>
+          </button>
+        ))}
 
         {filteredUsers.length === 0 && (
           <div className="text-center text-zinc-500 py-4">No online users</div>
@@ -156,5 +84,4 @@ const Sidebar = () => {
     </aside>
   );
 };
-
 export default Sidebar;
