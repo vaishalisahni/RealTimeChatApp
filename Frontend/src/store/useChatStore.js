@@ -23,16 +23,20 @@ export const useChatStore = create((set, get) => ({
   },
 
   getMessages: async (userId) => {
-    set({ isMessagesLoading: true });
-    try {
-      const res = await axiosInstance.get(`/messages/conversation/${userId}`);
-      set({ messages: res.data });
-    } catch (error) {
-      toast.error(error.response.data.message);
-    } finally {
-      set({ isMessagesLoading: false });
-    }
-  },
+  set({ isMessagesLoading: true });
+  try {
+    const res = await axiosInstance.get(`/messages/conversation/${userId}`);
+    const sortedMessages = res.data.sort(
+      (a, b) => new Date(a.createdAt) - new Date(b.createdAt)
+    );
+    set({ messages: sortedMessages });
+  } catch (error) {
+    toast.error(error.response.data.message);
+  } finally {
+    set({ isMessagesLoading: false });
+  }
+},
+
   sendMessage: async (messageData) => {
     const { selectedUser, messages } = get();
     try {
@@ -44,20 +48,23 @@ export const useChatStore = create((set, get) => ({
   },
 
   subscribeToMessages: () => {
-    const { selectedUser } = get();
-    if (!selectedUser) return;
+  const { selectedUser } = get();
+  if (!selectedUser) return;
 
-    const socket = useAuthStore.getState().socket;
+  const socket = useAuthStore.getState().socket;
 
-    socket.on("newMessage", (newMessage) => {
-      const isMessageSentFromSelectedUser = newMessage.senderId === selectedUser._id;
-      if (!isMessageSentFromSelectedUser) return;
+  socket.on("newMessage", (newMessage) => {
+    const isMessageSentFromSelectedUser = newMessage.senderId === selectedUser._id || newMessage.receiverId === selectedUser._id;
+    if (!isMessageSentFromSelectedUser) return;
 
-      set({
-        messages: [...get().messages, newMessage],
-      });
-    });
-  },
+    const updatedMessages = [...get().messages, newMessage].sort(
+      (a, b) => new Date(a.createdAt) - new Date(b.createdAt)
+    );
+
+    set({ messages: updatedMessages });
+  });
+},
+
 
   unsubscribeFromMessages: () => {
     const socket = useAuthStore.getState().socket;
